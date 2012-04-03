@@ -26,6 +26,8 @@ Vex.Flow.Test.Stave.Start = function() {
       Vex.Flow.Test.Stave.drawVoltaTest);
   Vex.Flow.Test.runRaphaelTest("Multiple Staves Volta Test (Raphael)",
       Vex.Flow.Test.Stave.drawVoltaTest);
+  Vex.Flow.Test.runTest("Connected Staves Test (Canvas)",
+      Vex.Flow.Test.Stave.drawConnected);
 }
 
 Vex.Flow.Test.Stave.draw = function(options, contextBuilder) {
@@ -277,5 +279,70 @@ Vex.Flow.Test.Stave.drawVoltaTest = function(options, contextBuilder) {
       ];
       // Helper function to justify and draw a 4/4 voice
       Vex.Flow.Formatter.FormatAndDraw(ctx, mm9, notesmm9);
+}
 
+Vex.Flow.Test.Stave.drawConnected = function(options, contextBuilder) {
+  // Get the rendering context
+  var ctx = contextBuilder(options.canvas_sel, 725, 400);
+  var x = 100; y = 10, width = 120, height = 80;
+  var staveCount = 4, measureCount = 5;
+  var bars = [
+	  [Vex.Flow.Barline.type.NONE, Vex.Flow.Barline.type.SINGLE],
+	  [Vex.Flow.Barline.type.NONE, Vex.Flow.Barline.type.DOUBLE],
+	  [Vex.Flow.Barline.type.NONE, Vex.Flow.Barline.type.NONE],
+	  [Vex.Flow.Barline.type.REPEAT_BEGIN, Vex.Flow.Barline.type.REPEAT_END],
+	  [Vex.Flow.Barline.type.NONE, Vex.Flow.Barline.type.END],
+  ];
+  var conns = [
+		Vex.Flow.StaveConnector.type.SINGLE,
+		Vex.Flow.StaveConnector.type.SINGLE,
+		Vex.Flow.StaveConnector.type.DOUBLE,
+		Vex.Flow.StaveConnector.type.SINGLE,
+		Vex.Flow.StaveConnector.type.SINGLE,
+  ];
+  var staves = [];
+
+  for (var i = 0; i < staveCount; i++) {
+    staves[i] = [];
+    for (var j = 0; j < measureCount; j++) {
+      var stave = i < 3 ?
+				new Vex.Flow.Stave(x + j * width, y + i * height, width) :
+				new Vex.Flow.TabStave(x + j * width, y + i * height, width);
+
+      if (i < 2) {
+        stave.setBegBarType(bars[j][0]);
+        stave.setEndBarType(bars[j][1]);
+      } else {
+        stave.setBegBarType(Vex.Flow.Barline.type.NONE);
+        stave.setEndBarType(Vex.Flow.Barline.type.NONE);
+      }
+
+      staves[i][j] = stave;
+    }
+  }
+
+  staves[0][0].addTrebleGlyph();
+  staves[1][0].addTrebleGlyph();
+  staves[2][0].addClef('bass');
+  staves[3][0].addTabGlyph();
+
+  // Connect staves
+
+  for (var j = 0; j < measureCount; j++) {
+    staves[1][j].connectWithStaves([staves[2][j], staves[3][j]]);
+  }
+
+  for (var i = 0; i < staveCount; i++) {
+    for (var j = 0; j < measureCount; j++) {
+      staves[i][j].setContext(ctx).draw();
+    }
+  }
+
+  var connector = new Vex.Flow.StaveConnector(staves[0][0], staves[3][0]);
+  connector.setType(Vex.Flow.StaveConnector.type.SINGLE);
+  connector.setContext(ctx).draw();
+
+  connector = new Vex.Flow.StaveConnector(staves[1][0], staves[3][0]);
+  connector.setType(Vex.Flow.StaveConnector.type.BRACKET);
+  connector.setContext(ctx).draw();
 }
